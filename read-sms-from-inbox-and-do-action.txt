@@ -1,0 +1,71 @@
+# System > Scripts
+# Name: SMS_Network_Status
+# Policy: ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon
+# Purpose: Read the SMS inbox, detect "network status" requests, and trigger a server-side SMS response.
+# Notes:
+# - Unknown SMS messages can be forwarded by email and then removed from the inbox.
+# - Set $EmailAddress before enabling email forwarding.
+# - Update the server URL in the fetch section to match your endpoint.
+
+:local smsTimeStamp
+:local smsMessage
+:local smsContent
+:local SystemID [/system identity get name]
+
+/tool sms set receive-enabled=yes
+# :delay 2
+
+# Loop through all messages in the inbox.
+:foreach i in=[/tool sms inbox find] do={
+    :local smsPhone [/tool sms inbox get $i phone]
+    :set smsTimeStamp [/tool sms inbox get $i timestamp]
+    :set smsMessage [/tool sms inbox get $i message]
+
+    # :log info "Network_Status script message: $smsMessage"
+    :if ($smsPhone != "" && $smsTimeStamp != "") do={
+        :if (([:find $smsMessage "network status"] >= 0) ||
+             ([:find $smsMessage "Network status"] >= 0) ||
+             ([:find $smsMessage "NETWORK STATUS"] >= 0) ||
+             ([:find $smsMessage "networkstatus"] >= 0) ||
+             ([:find $smsMessage "Networkstatus"] >= 0) ||
+             ([:find $smsMessage "NETWORKSTATUS"] >= 0) ||
+             ([:find $smsMessage "status network"] >= 0) ||
+             ([:find $smsMessage "Status network"] >= 0) ||
+             ([:find $smsMessage "STATUS NETWORK"] >= 0) ||
+             ([:find $smsMessage "statusnetwork"] >= 0) ||
+             ([:find $smsMessage "Statusnetwork"] >= 0) ||
+             ([:find $smsMessage "STATUSNETWORK"] >= 0) ||
+             ([:find $smsMessage "network-status"] >= 0) ||
+             ([:find $smsMessage "Network-Status"] >= 0) ||
+             ([:find $smsMessage "NETWORK-STATUS"] >= 0)) do={
+            /tool sms inbox remove $i
+            # Send POST to the server with the sender number.
+            # The server should use MikroTik to send the SMS reply with network status.
+            /tool fetch http-method=post http-data="n=\"$smsPhone\"" url="http://server/network-status-sms.php"
+
+            :log info "Sent HTTP POST to server for $smsPhone: $smsMessage"
+        } else={
+            :if ($smsMessage != "") do={
+                # Forward unknown SMS messages by email (sender number + message content).
+                # :set smsContent "MikroTik ID: $SystemID\nSMS from: $smsPhone\nDate and time: $smsTimeStamp\nMessage: $smsMessage"
+                # /tool e-mail send subject="SMS-system" to=$EmailAddress body="$smsContent"
+                /tool sms inbox remove $i
+            } else={
+                /tool sms inbox remove $i
+            }
+        }
+    }
+}
+
+# /tool sms set receive-enabled=no
+# :log info "SMS_Network_Status script complete"
+
+-------------------------------------------------------
+
+2. System > Scheduler
+Press "+"
+Name: Network_Status_scheduler
+Start Time: startup
+Interval: 10s (run every 10 seconds)
+Policy: ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon
+On Event: /system script run SMS_Network_Status
