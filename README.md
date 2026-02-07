@@ -21,4 +21,4 @@ response.
 - SMS replies are handled server-side (the router sends a POST only).
 
 ## Files
-- `read-sms-from-inbox-and-do-action.txt` — script content and scheduler instructions.
+- `read-sms-from-inbox-and-do-action.txt` - script content and scheduler instructions.
