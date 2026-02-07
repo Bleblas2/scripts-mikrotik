@@ -1,0 +1,33 @@
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor/IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+
+# Archives
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+
+# Temporary/backup files
+*.bak
+*.tmp
+*.old
+*.orig
+
+# MikroTik exports/backups
+*.rsc
+*.backup
+*.supout.rif
+
+# Local env files
+.env
